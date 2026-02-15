@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, RotateCcw, Plus, Trash2, ExternalLink, Settings, ArrowDown, ArrowUp, Zap, Moon, Sun, Monitor, Square, SquareDashedBottom, SquareDashedBottomCode } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Trash2, ExternalLink, Settings, ArrowDown, ArrowUp, Zap, Moon, Sun, Monitor, Square, SquareDashedBottom, SquareDashedBottomCode, Download, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LinkItem {
@@ -29,6 +29,8 @@ export default function AutoScrollApp() {
   const [newLink, setNewLink] = useState('');
   const [isScrolling, setIsScrolling] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [settings, setSettings] = useState<ScrollSettings>({
     speed: 50,
     direction: 'down',
@@ -271,6 +273,46 @@ export default function AutoScrollApp() {
     setDarkMode(!darkMode);
   };
   
+  // Check if extension is installed
+  const checkExtensionInstallation = async () => {
+    try {
+      // Type-safe Chrome API access
+      const chromeRuntime = (globalThis as any).chrome?.runtime;
+      if (!chromeRuntime) return;
+      
+      // Try to send a message to the extension
+      const response = await chromeRuntime.sendMessage('autoscroll-pro-extension', { action: 'ping' });
+      if (response && response.success) {
+        setIsExtensionInstalled(true);
+        toast.success('Chrome Extension detected and connected!');
+      }
+    } catch (error) {
+      // Extension not installed or not responding
+      setIsExtensionInstalled(false);
+    }
+  };
+  
+  const installExtension = () => {
+    setShowInstallGuide(true);
+  };
+  
+  const closeInstallGuide = () => {
+    setShowInstallGuide(false);
+  };
+  
+  // Check extension status on mount
+  useEffect(() => {
+    // Only check if we're in a browser environment
+    const chromeRuntime = (globalThis as any).chrome?.runtime;
+    if (chromeRuntime) {
+      checkExtensionInstallation();
+      
+      // Set up listener for extension installation
+      const checkInterval = setInterval(checkExtensionInstallation, 3000);
+      return () => clearInterval(checkInterval);
+    }
+  }, []);
+  
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       darkMode 
@@ -280,6 +322,20 @@ export default function AutoScrollApp() {
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-8 relative">
           <div className="absolute top-0 right-0 flex items-center gap-2">
+            {isExtensionInstalled ? (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
+                <CheckCircle className="w-4 h-4" />
+                Extension Active
+              </div>
+            ) : (
+              <Button
+                onClick={installExtension}
+                className="flex items-center gap-2 h-8 px-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-xs font-medium"
+              >
+                <Download className="w-4 h-4" />
+                Install Extension
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -784,6 +840,155 @@ export default function AutoScrollApp() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Extension Installation Guide Modal */}
+        {showInstallGuide && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className={`max-w-2xl w-full rounded-2xl shadow-2xl ${
+              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+            }`}>
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                      <Download className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Install AutoScroll Pro Extension
+                      </h2>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Enhance your auto-scrolling experience across all websites
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeInstallGuide}
+                    className={darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="space-y-6">
+                  <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
+                    <h3 className={`font-semibold flex items-center gap-2 ${darkMode ? 'text-blue-300' : 'text-blue-800'}`}>
+                      <AlertCircle className="w-5 h-5" />
+                      Why Install the Extension?
+                    </h3>
+                    <ul className={`mt-3 space-y-2 text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
+                      <li>• Auto-scroll any website without popup restrictions</li>
+                      <li>• Control multiple tabs simultaneously from one interface</li>
+                      <li>• Keyboard shortcuts for instant control (Ctrl+Shift+S)</li>
+                      <li>• Works seamlessly with this web tool</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Installation Steps
+                    </h3>
+                    <div className="space-y-4">
+                      <div className={`flex items-start gap-4 p-4 rounded-lg ${darkMode ? 'bg-gray-700/30' : 'bg-gray-50'}`}>
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} font-bold`}>
+                          1
+                        </div>
+                        <div>
+                          <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Open Chrome Extensions
+                          </h4>
+                          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Navigate to chrome://extensions/ in your browser
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className={`flex items-start gap-4 p-4 rounded-lg ${darkMode ? 'bg-gray-700/30' : 'bg-gray-50'}`}>
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} font-bold`}>
+                          2
+                        </div>
+                        <div>
+                          <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Enable Developer Mode
+                          </h4>
+                          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Toggle the &quot;Developer mode&quot; switch in the top-right corner
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className={`flex items-start gap-4 p-4 rounded-lg ${darkMode ? 'bg-gray-700/30' : 'bg-gray-50'}`}>
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} font-bold`}>
+                          3
+                        </div>
+                        <div>
+                          <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Load Extension
+                          </h4>
+                          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Click &quot;Load unpacked&quot; and select the chrome-extension folder
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className={`flex items-start gap-4 p-4 rounded-lg ${darkMode ? 'bg-gray-700/30' : 'bg-gray-50'}`}>
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'} font-bold`}>
+                          4
+                        </div>
+                        <div>
+                          <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Pin the Extension
+                          </h4>
+                          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Click the puzzle icon and pin &quot;AutoScroll Pro&quot; for easy access
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-xl ${darkMode ? 'bg-green-900/20 border border-green-800/30' : 'bg-green-50 border border-green-200'}`}>
+                    <h3 className={`font-semibold flex items-center gap-2 ${darkMode ? 'text-green-300' : 'text-green-800'}`}>
+                      <CheckCircle className="w-5 h-5" />
+                      Auto-Scroll Capabilities
+                    </h3>
+                    <p className={`mt-2 text-sm ${darkMode ? 'text-green-200' : 'text-green-700'}`}>
+                      Once installed, the extension will automatically detect and control auto-scrolling on any website you open. You can control all opened windows simultaneously, use keyboard shortcuts, and manage settings from either the extension popup or this web tool.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className={`p-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={closeInstallGuide}
+                    className={darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      window.open('chrome://extensions/', '_blank');
+                      closeInstallGuide();
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Open Extensions Page
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
